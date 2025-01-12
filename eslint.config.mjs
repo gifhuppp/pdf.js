@@ -103,6 +103,8 @@ export default [
             "web",
             "fluent-bundle",
             "fluent-dom",
+            // See https://github.com/firebase/firebase-admin-node/discussions/1359.
+            "eslint-plugin-perfectionist",
           ],
         },
       ],
@@ -112,6 +114,7 @@ export default [
       "perfectionist/sort-named-exports": "error",
       "unicorn/no-abusive-eslint-disable": "error",
       "unicorn/no-array-push-push": "error",
+      "unicorn/no-console-spaces": "error",
       "unicorn/no-instanceof-array": "error",
       "unicorn/no-invalid-remove-event-listener": "error",
       "unicorn/no-new-buffer": "error",
@@ -347,15 +350,6 @@ export default [
       "jasmine/no-suite-dupes": ["error", "branch"],
       "jasmine/prefer-jasmine-matcher": "off",
       "jasmine/prefer-toHaveBeenCalledWith": "off",
-    },
-  },
-  {
-    files: jsFiles("test/fuzz"),
-    rules: {
-      "import/no-unresolved": [
-        "error",
-        { ignore: [".*/build/image_decoders/.*"] },
-      ],
     },
   },
   {

@@ -94,6 +94,7 @@
 !issue8424.pdf
 !issue8480.pdf
 !bug1650302_reduced.pdf
+!issue18816.pdf
 !issue8570.pdf
 !issue8697.pdf
 !issue8702.pdf
@@ -232,6 +233,7 @@
 !issue5954.pdf
 !issue6612.pdf
 !alphatrans.pdf
+!issue14200.pdf
 !pattern_text_embedded_font.pdf
 !devicen.pdf
 !cmykjpeg.pdf
@@ -553,6 +555,7 @@
 !poppler-67295-0.pdf
 !poppler-85140-0.pdf
 !issue15012.pdf
+!issue19176.pdf
 !issue15150.pdf
 !poppler-395-0-fuzzed.pdf
 !issue14165.pdf
@@ -683,3 +686,11 @@
 !issue18956.pdf
 !issue19083.pdf
 !issue19120.pdf
+!bug1934157.pdf
+!rotated_ink.pdf
+!inks.pdf
+!inks_basic.pdf
+!issue19182.pdf
+!issue18911.pdf
+!issue19207.pdf
+!issue19239.pdf
