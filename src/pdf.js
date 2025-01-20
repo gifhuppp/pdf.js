@@ -31,13 +31,12 @@ import {
   FeatureTest,
   ImageKind,
   InvalidPDFException,
-  MissingPDFException,
   normalizeUnicode,
   OPS,
   PasswordResponses,
   PermissionFlag,
+  ResponseException,
   shadow,
-  UnexpectedResponseException,
   Util,
   VerbosityLevel,
 } from "./shared/util.js";
@@ -72,6 +71,7 @@ import { DrawLayer } from "./display/draw_layer.js";
 import { GlobalWorkerOptions } from "./display/worker_options.js";
 import { HighlightOutliner } from "./display/editor/drawers/highlight.js";
 import { TextLayer } from "./display/text_layer.js";
+import { TouchManager } from "./display/touch_manager.js";
 import { XfaLayer } from "./display/xfa_layer.js";
 
 /* eslint-disable-next-line no-unused-vars */
@@ -111,7 +111,6 @@ export {
   InvalidPDFException,
   isDataScheme,
   isPdfFile,
-  MissingPDFException,
   noContextMenu,
   normalizeUnicode,
   OPS,
@@ -123,11 +122,12 @@ export {
   PermissionFlag,
   PixelsPerInch,
   RenderingCancelledException,
+  ResponseException,
   setLayerDimensions,
   shadow,
   stopEvent,
   TextLayer,
-  UnexpectedResponseException,
+  TouchManager,
   Util,
   VerbosityLevel,
   version,

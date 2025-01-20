@@ -610,6 +610,8 @@ class AnnotationEditorUIManager {
 
   #copyPasteAC = null;
 
+  #currentDrawingSession = null;
+
   #currentPageIndex = 0;
 
   #deletedAnnotationsElementIds = new Set();
@@ -619,6 +621,8 @@ class AnnotationEditorUIManager {
   #editorTypes = null;
 
   #editorsToRescale = new Set();
+
+  _editorUndoBar = null;
 
   #enableHighlightFloatingButton = false;
 
@@ -649,6 +653,8 @@ class AnnotationEditorUIManager {
   #lastActiveElement = null;
 
   #mainHighlightColorPicker = null;
+
+  #missingCanvases = null;
 
   #mlManager = null;
 
@@ -829,7 +835,9 @@ class AnnotationEditorUIManager {
     enableHighlightFloatingButton,
     enableUpdatedAddImage,
     enableNewAltTextWhenAddingImage,
-    mlManager
+    mlManager,
+    editorUndoBar,
+    supportsPinchToZoom
   ) {
     const signal = (this._signal = this.#abortController.signal);
     this.#container = container;
@@ -864,6 +872,8 @@ class AnnotationEditorUIManager {
       rotation: 0,
     };
     this.isShiftKeyDown = false;
+    this._editorUndoBar = editorUndoBar || null;
+    this._supportsPinchToZoom = supportsPinchToZoom !== false;
 
     if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("TESTING")) {
       Object.defineProperty(this, "reset", {
@@ -890,6 +900,7 @@ class AnnotationEditorUIManager {
     this.#allLayers.clear();
     this.#allEditors.clear();
     this.#editorsToRescale.clear();
+    this.#missingCanvases?.clear();
     this.#activeEditor = null;
     this.#selectedEditors.clear();
     this.#commandManager.destroy();
@@ -904,6 +915,7 @@ class AnnotationEditorUIManager {
       clearTimeout(this.#translationTimeoutId);
       this.#translationTimeoutId = null;
     }
+    this._editorUndoBar?.destroy();
   }
 
   combinedSignal(ac) {
@@ -965,6 +977,20 @@ class AnnotationEditorUIManager {
         ? new Map(Array.from(this.highlightColors, e => e.reverse()))
         : null
     );
+  }
+
+  /**
+   * Set the current drawing session.
+   * @param {AnnotationEditorLayer} layer
+   */
+  setCurrentDrawingSession(layer) {
+    if (layer) {
+      this.unselectAll();
+      this.disableUserSelect(true);
+    } else {
+      this.disableUserSelect(false);
+    }
+    this.#currentDrawingSession = layer;
   }
 
   setMainHighlightColorPicker(colorPicker) {
@@ -1049,7 +1075,7 @@ class AnnotationEditorUIManager {
     for (const editor of this.#editorsToRescale) {
       editor.onScaleChanging();
     }
-    this.currentLayer?.onScaleChanging();
+    this.#currentDrawingSession?.onScaleChanging();
   }
 
   onRotationChanging({ pagesRotation }) {
@@ -1656,6 +1682,8 @@ class AnnotationEditorUIManager {
       this.setEditingState(false);
       this.#disableAll();
 
+      this._editorUndoBar?.hide();
+
       this.#updateModeCapability.resolve();
       return;
     }
@@ -1684,6 +1712,10 @@ class AnnotationEditorUIManager {
     }
 
     this.#updateModeCapability.resolve();
+  }
+
+  isInEditingMode() {
+    return this.#mode !== AnnotationEditorType.NONE;
   }
 
   addNewEditorFromKeyboard() {
@@ -1862,6 +1894,9 @@ class AnnotationEditorUIManager {
       }, 0);
     }
     this.#allEditors.delete(editor.id);
+    if (editor.annotationElementId) {
+      this.#missingCanvases?.delete(editor.annotationElementId);
+    }
     this.unselect(editor);
     if (
       !editor.annotationElementId ||
@@ -1977,7 +2012,7 @@ class AnnotationEditorUIManager {
    * @param {AnnotationEditor} editor
    */
   setSelected(editor) {
-    this.currentLayer?.commitOrRemove();
+    this.#currentDrawingSession?.commitOrRemove();
     for (const ed of this.#selectedEditors) {
       if (ed !== editor) {
         ed.unselect();
@@ -2038,6 +2073,7 @@ class AnnotationEditorUIManager {
       hasSomethingToRedo: true,
       isEmpty: this.#isEmpty(),
     });
+    this._editorUndoBar?.hide();
   }
 
   /**
@@ -2099,6 +2135,10 @@ class AnnotationEditorUIManager {
       ? [drawingEditor]
       : [...this.#selectedEditors];
     const cmd = () => {
+      this._editorUndoBar?.show(
+        undo,
+        editors.length === 1 ? editors[0].editorType : editors.length
+      );
       for (const editor of editors) {
         editor.remove();
       }
@@ -2164,7 +2204,7 @@ class AnnotationEditorUIManager {
       }
     }
 
-    if (this.currentLayer?.commitOrRemove()) {
+    if (this.#currentDrawingSession?.commitOrRemove()) {
       return;
     }
 
@@ -2483,6 +2523,19 @@ class AnnotationEditorUIManager {
       return;
     }
     editor.renderAnnotationElement(annotation);
+  }
+
+  setMissingCanvas(annotationId, annotationElementId, canvas) {
+    const editor = this.#missingCanvases?.get(annotationId);
+    if (!editor) {
+      return;
+    }
+    editor.setCanvas(annotationElementId, canvas);
+    this.#missingCanvases.delete(annotationId);
+  }
+
+  addMissingCanvas(annotationId, editor) {
+    (this.#missingCanvases ||= new Map()).set(annotationId, editor);
   }
 }
 

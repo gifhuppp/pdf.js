@@ -74,7 +74,11 @@ class AnnotationEditorLayer {
 
   #isDisabling = false;
 
+  #isEnabling = false;
+
   #drawingAC = null;
+
+  #focusedElement = null;
 
   #textLayer = null;
 
@@ -227,6 +231,7 @@ class AnnotationEditorLayer {
    * editor creation.
    */
   async enable() {
+    this.#isEnabling = true;
     this.div.tabIndex = 0;
     this.togglePointerEvents(true);
     const annotationElementIds = new Set();
@@ -240,6 +245,7 @@ class AnnotationEditorLayer {
     }
 
     if (!this.#annotationLayer) {
+      this.#isEnabling = false;
       return;
     }
 
@@ -260,6 +266,7 @@ class AnnotationEditorLayer {
       this.addOrRebuild(editor);
       editor.enableEditing();
     }
+    this.#isEnabling = false;
   }
 
   /**
@@ -420,9 +427,9 @@ class AnnotationEditorLayer {
     this.div.addEventListener("pointerdown", this.pointerdown.bind(this), {
       signal,
     });
-    this.div.addEventListener("pointerup", this.pointerup.bind(this), {
-      signal,
-    });
+    const pointerup = this.pointerup.bind(this);
+    this.div.addEventListener("pointerup", pointerup, { signal });
+    this.div.addEventListener("pointercancel", pointerup, { signal });
   }
 
   disableClick() {
@@ -506,7 +513,7 @@ class AnnotationEditorLayer {
 
     // The editor will be correctly moved into the DOM (see fixAndSetPosition).
     editor.fixAndSetPosition();
-    editor.onceAdded();
+    editor.onceAdded(/* focus = */ !this.#isEnabling);
     this.#uiManager.addToAnnotationStorage(editor);
     editor._reportTelemetry(editor.telemetryInitialData);
   }
@@ -804,29 +811,46 @@ class AnnotationEditorLayer {
       return;
     }
 
-    this.#uiManager.unselectAll();
+    this.#uiManager.setCurrentDrawingSession(this);
     this.#drawingAC = new AbortController();
     const signal = this.#uiManager.combinedSignal(this.#drawingAC);
     this.div.addEventListener(
       "blur",
       ({ relatedTarget }) => {
         if (relatedTarget && !this.div.contains(relatedTarget)) {
+          this.#focusedElement = null;
           this.commitOrRemove();
         }
       },
       { signal }
     );
-    this.#uiManager.disableUserSelect(true);
     this.#currentEditorType.startDrawing(this, this.#uiManager, false, event);
+  }
+
+  pause(on) {
+    if (on) {
+      const { activeElement } = document;
+      if (this.div.contains(activeElement)) {
+        this.#focusedElement = activeElement;
+      }
+      return;
+    }
+    if (this.#focusedElement) {
+      setTimeout(() => {
+        this.#focusedElement?.focus();
+        this.#focusedElement = null;
+      }, 0);
+    }
   }
 
   endDrawingSession(isAborted = false) {
     if (!this.#drawingAC) {
       return null;
     }
+    this.#uiManager.setCurrentDrawingSession(null);
     this.#drawingAC.abort();
     this.#drawingAC = null;
-    this.#uiManager.disableUserSelect(false);
+    this.#focusedElement = null;
     return this.#currentEditorType.endDrawing(isAborted);
   }
 

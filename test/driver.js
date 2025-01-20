@@ -31,6 +31,7 @@ const { GenericL10n, parseQueryString, SimpleLinkService } = pdfjsViewer;
 const WAITING_TIME = 100; // ms
 const CMAP_URL = "/build/generic/web/cmaps/";
 const STANDARD_FONT_DATA_URL = "/build/generic/web/standard_fonts/";
+const WASM_URL = "/build/generic/web/wasm/";
 const IMAGE_RESOURCES_PATH = "/web/images/";
 const VIEWER_CSS = "../build/components/pdf_viewer.css";
 const VIEWER_LOCALE = "en-US";
@@ -609,13 +610,6 @@ class Driver {
         return;
       }
 
-      if (task.noChrome && window?.chrome) {
-        this._log(`Skipping file "${task.file}" (because on Chrome)\n`);
-        this.currentTask++;
-        this._nextTask();
-        return;
-      }
-
       this._log('Loading file "' + task.file + '"\n');
 
       try {
@@ -631,12 +625,14 @@ class Driver {
         }
         const isOffscreenCanvasSupported =
           task.isOffscreenCanvasSupported === false ? false : undefined;
+        const disableFontFace = task.disableFontFace === true;
 
         const loadingTask = getDocument({
           url: new URL(task.file, window.location),
           password: task.password,
           cMapUrl: CMAP_URL,
           standardFontDataUrl: STANDARD_FONT_DATA_URL,
+          wasmUrl: WASM_URL,
           disableAutoFetch: !task.enableAutoFetch,
           pdfBug: true,
           useSystemFonts: task.useSystemFonts,
@@ -644,6 +640,7 @@ class Driver {
           enableXfa: task.enableXfa,
           isOffscreenCanvasSupported,
           styleElement: xfaStyleElement,
+          disableFontFace,
         });
         let promise = loadingTask.promise;
 
@@ -1199,7 +1196,7 @@ class Driver {
         resolve();
       })
       .catch(reason => {
-        console.warn(`Driver._send failed (${url}): ${reason}`);
+        console.warn(`Driver._send failed (${url}):`, reason);
 
         this.inFlightRequests--;
         resolve();
