@@ -62,6 +62,9 @@ const TestReporter = function (browser) {
   this.specStarted = function (result) {};
 
   this.specDone = function (result) {
+    if (result.status === "excluded") {
+      return;
+    }
     // Report on the result of individual tests.
     if (result.failedExpectations.length === 0) {
       sendResult("TEST-PASSED", result.description);
@@ -75,6 +78,9 @@ const TestReporter = function (browser) {
   };
 
   this.suiteDone = function (result) {
+    if (result.status === "excluded") {
+      return;
+    }
     // Report on the result of `afterAll` invocations.
     if (result.failedExpectations.length > 0) {
       let failedMessages = "";
